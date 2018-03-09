@@ -5,6 +5,7 @@ import Style from './style';
 import Text from './text';
 import TextStyle from './textStyle';
 import {parseBackgroundImage, fixBackgroundImage} from './helpers/background';
+import SVG from './svg';
 
 const DEFAULT_VALUES = {
   backgroundColor: 'rgba(0, 0, 0, 0)',
@@ -75,6 +76,22 @@ function fixBorderRadius(borderRadius, width, height) {
   return parseInt(borderRadius, 10);
 }
 
+function isSVGDescendant(node) {
+  if (node.nodeName === 'HTML') {
+    return false;
+  }
+
+  let parent = node.parentNode;
+
+  while (parent.nodeName !== 'svg') {
+    parent = parent.parentNode;
+    if (parent === document) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export default async function nodeToSketchLayers(node) {
   const layers = [];
   const {width, height, x, y} = node.getBoundingClientRect();
@@ -120,6 +137,10 @@ export default async function nodeToSketchLayers(node) {
     clip
   } = styles;
 
+  if (isSVGDescendant(node)) {
+    return layers;
+  }
+
   // Skip node when display is set to none for itself or an ancestor
   // https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/offsetParent
   if (node.offsetParent === null && position !== 'fixed') {
@@ -140,6 +161,25 @@ export default async function nodeToSketchLayers(node) {
 
   const leaf = new ShapeGroup({x, y, width, height});
   const isImage = node.nodeName === 'IMG' && node.attributes.src;
+  const isSVG = node.nodeName.toLowerCase() === 'svg';
+
+  if (isSVG) {
+    const pathData = {};
+    let BCRNode = node;
+
+    if (node.childNodes.length === 1) {
+      BCRNode = node.childNodes[0];
+    }
+
+    const {width, height, x, y} = BCRNode.getBoundingClientRect();
+
+    pathData.width = width;
+    pathData.height = height;
+    pathData.x = x;
+    pathData.y = y;
+
+    layers.push(new SVG(Object.assign({rawSVGString: node.outerHTML}, pathData)));
+  }
 
   // if layer has no background/shadow/border/etc. skip it
   if (isImage || !hasOnlyDefaultStyles(styles)) {
