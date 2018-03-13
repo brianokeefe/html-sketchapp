@@ -5,7 +5,7 @@ import Style from './style';
 import Text from './text';
 import TextStyle from './textStyle';
 import SVG from './svg';
-import {parseBackgroundImage} from './helpers/background';
+import {parseBackgroundImage, fixBackgroundImage} from './helpers/background';
 import {getSVGString} from './helpers/svg';
 import {getGroupBCR} from './helpers/bcr';
 
@@ -130,6 +130,9 @@ export default async function nodeToSketchLayers(node) {
   const {
     backgroundColor,
     backgroundImage,
+    backgroundPosition,
+    backgroundSize,
+    backgroundRepeat,
     borderColor,
     borderWidth,
     borderTopWidth,
@@ -208,7 +211,16 @@ export default async function nodeToSketchLayers(node) {
     if (backgroundImageResult) {
       switch (backgroundImageResult.type) {
         case 'Image':
-          await style.addImageFill(backgroundImageResult.value);
+          await style.addImageFill(
+            await fixBackgroundImage(
+              backgroundImageResult.value,
+              width,
+              height,
+              backgroundSize,
+              backgroundPosition,
+              backgroundRepeat
+            )
+          );
           break;
         case 'LinearGradient':
           style.addGradientFill(backgroundImageResult.value);
