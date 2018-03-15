@@ -102,7 +102,7 @@ function inlineStyles(node) {
 function getUseReplacement(node) {
   const href = node.href.baseVal;
   // TODO this will only work for internal references
-  const refNode = document.querySelector(href);
+  const refNode = document.querySelector(`[id="${href}"]`);
   let resultNode = null;
 
   if (refNode) {
